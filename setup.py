@@ -35,4 +35,7 @@ setup(
     requires=[
         #'six',
     ],
+    extras_require={
+        'test': ['pytest', 'pytest-mock'],
+    },
 )
