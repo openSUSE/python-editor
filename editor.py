@@ -6,6 +6,7 @@ from __future__ import print_function
 import sys
 import locale
 import os.path
+import shlex
 import subprocess
 import tempfile
 
@@ -89,8 +90,12 @@ def get_tty_filename():
 
 
 def edit(filename=None, contents=None, use_tty=None, suffix=''):
-    editor = get_editor()
-    args = [editor] + get_editor_args(os.path.basename(os.path.realpath(editor)))
+    # editor can include CLI flags, e.g. "emacsclient -c"
+    editor = shlex.split(get_editor())
+
+    # Get additional args based on the actual editor command (and ignore flags)
+    additional_args = get_editor_args(os.path.basename(os.path.realpath(editor[0])))
+    args = editor + additional_args
 
     if use_tty is None:
         use_tty = sys.stdin.isatty() and not sys.stdout.isatty()
