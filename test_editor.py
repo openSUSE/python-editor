@@ -71,6 +71,32 @@ def test_get_editor_environment_variables(
     assert editor.get_editor() == expected_editor
 
 
+def test_edit_with_editor_command_and_args(
+    mocker: MockerFixture, monkeypatch: MonkeyPatch
+) -> None:
+    """Test edit() function handles EDITOR with command arguments."""
+    # Set EDITOR to include command arguments
+    monkeypatch.delenv("VISUAL", raising=False)
+    monkeypatch.setenv("EDITOR", "emacsclient -c")
+
+    mock_popen = mocker.patch("subprocess.Popen")
+    mock_process = mocker.MagicMock()
+    mock_popen.return_value = mock_process
+
+    mock_open = mocker.mock_open(read_data=b"test content")
+    mocker.patch("builtins.open", mock_open)
+    mocker.patch("sys.stdin.isatty", return_value=True)
+    mocker.patch("sys.stdout.isatty", return_value=True)
+
+    result = editor.edit(filename="/tmp/test.txt")
+
+    assert result == b"test content"
+    mock_popen.assert_called_once_with(
+        ["emacsclient", "-c", "-nw", "/tmp/test.txt"], close_fds=True, stdout=None
+    )
+    mock_process.communicate.assert_called_once()
+
+
 def test_get_editor_fallback_success(
     mocker: MockerFixture, monkeypatch: MonkeyPatch, mock_find_executable
 ) -> None:
