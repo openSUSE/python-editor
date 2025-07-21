@@ -29,3 +29,20 @@ jobs:
     - name: run the tests
       run: |
         pytest test_editor.py -v
+
+  test-python36:
+    runs-on: ubuntu-latest
+    container:
+      image: registry.suse.com/bci/python:3.6
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: install dependencies
+      run: |
+        python3 -m pip install --upgrade pip
+        pip install -e .[test]
+
+    - name: run the tests
+      run: |
+        pytest test_editor.py -v
