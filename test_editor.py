@@ -1,6 +1,5 @@
 from typing import List, Optional, Union
 import pytest
-import sys
 from pytest_mock import MockerFixture
 from _pytest.monkeypatch import MonkeyPatch
 
@@ -9,13 +8,28 @@ import editor
 
 @pytest.fixture
 def mock_find_executable(mocker: MockerFixture):
-    """Mock the appropriate find_executable function based on Python version."""
-    if sys.version_info >= (3, 12):
-        # Python 3.12+ uses shutil.which
-        return mocker.patch("shutil.which")
-    else:
-        # Python < 3.12 uses distutils.spawn.find_executable
-        return mocker.patch("distutils.spawn.find_executable")
+    """Mock both possible find_executable functions to handle runtime imports."""
+    # Mock both import paths since get_editor() imports at runtime
+    mock_distutils = None
+    mock_shutil = None
+
+    # Try to mock distutils.spawn.find_executable if available
+    try:
+        mock_distutils = mocker.patch("distutils.spawn.find_executable")
+    except (ImportError, AttributeError):
+        pass
+
+    # Always mock shutil.which as fallback
+    mock_shutil = mocker.patch("shutil.which")
+
+    # Return the mock that will actually be used based on what's available
+    # If distutils is available, it will be used first by get_editor()
+    try:
+        import distutils.spawn
+
+        return mock_distutils if mock_distutils else mock_shutil
+    except ImportError:
+        return mock_shutil
 
 
 def test_get_default_editors() -> None:
